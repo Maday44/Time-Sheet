@@ -3,8 +3,8 @@ from tkinter import messagebox, filedialog
 from datetime import datetime, timedelta
 from openpyxl import load_workbook
 
-
-TIMESHEET_FILE = "36.5 C Flexi.xlsx"
+# name you excel spread sheet here
+TIMESHEET_FILE = ""
 
 today_date = datetime.now()
 
