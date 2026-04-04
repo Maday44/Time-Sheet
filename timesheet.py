@@ -58,7 +58,6 @@ class FlexiTimeSheet:
 
     def start_break(self):
         if self.clock_in_time:
-            # simulate break at 12:30
             self.break_start_time = datetime.now().time()
             self.status.config(text="Started break", fg="green")
         else:
@@ -67,7 +66,6 @@ class FlexiTimeSheet:
 
     def end_break(self):
         if self.break_start_time:
-            # simulate break end at 13:00
             self.break_end_time = datetime.now().time()
             self.status.config(text="Ended break", fg="green")
         else:
@@ -79,7 +77,6 @@ class FlexiTimeSheet:
             messagebox.showwarning("Error", "Clock in first!")
             return
 
-        # simulate clock out at 17:00
         self.clock_out_time = datetime.now().time()
         self.status.config(text="Clocked Out", fg="green")
 
@@ -90,13 +87,21 @@ class FlexiTimeSheet:
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
+    def round_up_to_5(self, t):
+        """Round a time object up to the nearest 5 minutes."""
+        dt = datetime.combine(datetime.today(), t)
+        minutes = dt.minute
+        remainder = minutes % 5
+        if remainder != 0:
+            dt += timedelta(minutes=(5 - remainder))
+        dt = dt.replace(second=0, microsecond=0)
+        return dt.time()
 
     def write_to_excel(self):
         wb = load_workbook(TIMESHEET_FILE)
         ws = wb.active
 
         today_day = today_date.day
-
         target_date = None
 
         for row in range(11, 44):
@@ -105,16 +110,15 @@ class FlexiTimeSheet:
                 break
 
         if target_date is None:
-            raise Exception(f"'{today_date.strftime("%d/%m/%Y")}' is not in your Time Sheet!")
+            raise Exception(f"'{today_date.strftime('%d/%m/%Y')}' is not in your Time Sheet!")
 
-        # Write times
-        ws[f"D{target_date}"] = self.clock_in_time
-        ws[f"E{target_date}"] = self.break_start_time
-        ws[f"F{target_date}"] = self.break_end_time
-        ws[f"G{target_date}"] = self.clock_out_time
+
+        ws[f"D{target_date}"] = self.round_up_to_5(self.clock_in_time)
+        ws[f"E{target_date}"] = self.round_up_to_5(self.break_start_time) if self.break_start_time else None
+        ws[f"F{target_date}"] = self.round_up_to_5(self.break_end_time) if self.break_end_time else None
+        ws[f"G{target_date}"] = self.round_up_to_5(self.clock_out_time)
 
         wb.save(TIMESHEET_FILE)
-
 
     def reset(self):
         self.clock_in_time = None
